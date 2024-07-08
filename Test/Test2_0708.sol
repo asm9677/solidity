@@ -44,25 +44,27 @@ contract TEST2 {
         uint number;
         uint score;
         string grade;
+        string[] classes;
     }
 
     Student[] students;
 
-    constructor() {
-        pushStudent("Alice", 85);
-        pushStudent("Bob", 75);
-        pushStudent("Charlie", 60);
-        pushStudent("Dwayne", 90);
-        pushStudent("Ellen", 65);
-        pushStudent("Fitz", 50);
-        pushStudent("Garret", 80);
-        pushStudent("Hubert", 90);
-        pushStudent("Isabel", 100);
-        pushStudent("Jane", 70);
-    }
+    // constructor() {
+    //     string[] memory _classes;
+    //     pushStudent("Alice", 85, _classes);
+    //     pushStudent("Bob", 75, _classes);
+    //     pushStudent("Charlie", 60, _classes);
+    //     pushStudent("Dwayne", 90, _classes);
+    //     pushStudent("Ellen", 65, _classes);
+    //     pushStudent("Fitz", 50, _classes);
+    //     pushStudent("Garret", 80, _classes);
+    //     pushStudent("Hubert", 90, _classes);
+    //     pushStudent("Isabel", 100, _classes);
+    //     pushStudent("Jane", 70, _classes);
+    // }
 
     // * 학생 추가 기능 - 특정 학생의 정보를 추가
-    function pushStudent(string memory _name, uint _score) public {
+    function pushStudent(string memory _name, uint _score, string[] memory _classes) public {
         string memory _grade = "F";
         if(_score >= 90) 
             _grade = "A";
@@ -73,7 +75,7 @@ contract TEST2 {
         else if(_score >= 60) 
             _grade = "D";
 
-        students.push(Student(_name, students.length+1, _score, _grade));
+        students.push(Student(_name, students.length+1, _score, _grade, _classes));
     }
 
     // * 학생 조회 기능(1) - 특정 학생의 번호를 입력하면 그 학생 전체 정보를 반환    
@@ -82,7 +84,9 @@ contract TEST2 {
             if(_number == students[i].number)
                 return students[i];
         }
-        return Student("",0,0,"");
+
+        Student memory empty;
+        return empty;
     }
 
     // * 학생 조회 기능(2) - 특정 학생의 이름을 입력하면 그 학생 전체 정보를 반환
@@ -91,7 +95,9 @@ contract TEST2 {
             if(keccak256(abi.encodePacked(_name)) == keccak256(abi.encodePacked(students[i].name)))
                 return students[i];
         }
-        return Student("",0,0,"");
+        
+        Student memory empty;
+        return empty;
     }
     
     // * 학생 점수 조회 기능 - 특정 학생의 이름을 입력하면 그 학생의 점수를 반환
@@ -140,12 +146,10 @@ contract TEST2 {
             if(students[i].score < 60)
                 extraStudents[j++] = students[i];
         }
-
         return (extraCount, extraStudents);
     }
 
-    // * S반 조회 기능 - 가장 점수가 높은 학생 4명을 S반으로 설정하는데, 이 학생들의 전체 정보를 반환하는 기능 (S반은 4명으로 한정)
-    
+    // * S반 조회 기능 - 가장 점수가 높은 학생 4명을 S반으로 설정하는데, 이 학생들의 전체 정보를 반환하는 기능 (S반은 4명으로 한정)    
     function getExcellentStudents() public view returns(Student[4] memory) {
         Student[4] memory excellentStudents;
 
