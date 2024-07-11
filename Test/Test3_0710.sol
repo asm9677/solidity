@@ -2,7 +2,7 @@
 
 pragma solidity >=0.8.2 <0.9.0;
 
-contract TEST2 {
+contract TEST3 {
     /*
     학생 점수관리 프로그램입니다.
     여러분은 한 학급을 맡았습니다.

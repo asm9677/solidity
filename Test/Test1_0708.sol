@@ -2,7 +2,7 @@
 
 pragma solidity >=0.8.2 <0.9.0;
 
-contract TEST2 {
+contract TEST1 {
     /*
     여러분은 선생님입니다. 학생들의 정보를 관리하려고 합니다. 
     학생의 정보는 이름, 번호, 점수, 학점 그리고 듣는 수업들이 포함되어야 합니다.
@@ -167,5 +167,5 @@ contract TEST2 {
         }
 
         return excellentStudents;
-    }
+    }    
 }
