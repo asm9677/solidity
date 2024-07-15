@@ -44,7 +44,13 @@ contract TEST4 {
     }
 
     Game[] users;
-    uint[] room;
+    uint[] room;    
+
+    modifier checkUser(address _addr) {
+        Game memory user = getUser(_addr);
+        require(user.number != 0, "Account does not exist");
+        _;
+    }
 
     // * 관리자 인출 기능 - 관리자는 0번지갑으로 배포와 동시에 설정해주세요, 관리자는 원할 때 전액 혹은 일부 금액을 인출할 수 있음 (따로 구현)
     constructor() {
@@ -84,43 +90,35 @@ contract TEST4 {
     }
 
     // * 게임 참가시 참가비 제출 기능 - 참가시 0.01eth 지불 (돈은 smart contract가 보관)
-    function pushRoom(uint _number) public {
+    function pushRoom(uint _number) private {
         room.push(_number);
         if(room.length == 4) {
-            reward();
+            for(uint i = 0; i < room.length; i++) {          
+                users[room[i] - 1].score += 4-i;
+            }
             delete room;
         }
     }
 
-    function play() public payable {
+    function play() public payable checkUser(msg.sender) {
         Game memory user = getUser(msg.sender);
-        require(user.number != 0, "Account does not exist");
-        require(msg.value >= 0.01 ether || user.balance >= 0.01 ether, "Insufficient balance");
         if(msg.value >= 0.01 ether) {
             pushRoom(user.number);
-        } else {            
+        } else if (user.balance >= 0.01 ether){            
             pushRoom(user.number);
             users[user.number-1].balance -= 0.01 ether;
+        } else {
+            revert("Insufficient balance");
         }
     }
 
     // * 점수를 돈으로 바꾸는 기능 - 10점마다 0.1eth로 환전
-    function reward() public {
-        for(uint i = 0; i < room.length; i++) {          
-            Game storage user = users[room[i] - 1];
-            user.score += 4-i;
-            if(user.score >= 10) {
-                user.addr.transfer(0.01 ether * (user.score / 10));
-                user.score %= 10;
-            }
-        }
-    }
-
-    function reward(uint _idx) public {
-        if(users[_idx].score >= 10) {
-            users[_idx].addr.transfer(0.01 ether * (users[_idx].score / 10));
-            users[_idx].score %= 10;
-        }
+    function getReward() public checkUser(msg.sender) {
+        Game memory user = getUser(msg.sender);                
+        require(user.score >= 10, "Insufficient score");
+        
+        user.addr.transfer(0.1 ether * (user.score / 10));
+        users[user.number-1].score %= 10;        
     }
 
     // * 예치 기능 - 게임할 때마다 참가비를 내지 말고 유저가 일정금액을 미리 예치하고 게임할 때마다 자동으로 차감시키는 기능.
@@ -132,4 +130,8 @@ contract TEST4 {
     receive() external payable { 
         deposit();
     }    
+
+    fallback() external payable { 
+        revert();
+    }
 }
