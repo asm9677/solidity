@@ -38,17 +38,16 @@ contract TEST4 {
     struct Game {
         uint number;
         string name;
-        address payable addr;
         uint balance;
         uint score;
     }
 
-    Game[] users;
-    uint[] room;    
+    mapping(address => Game) users;
+    uint total;
+    address[] room;    
 
-    modifier checkUser(address _addr) {
-        Game memory user = getUser(_addr);
-        require(user.number != 0, "Account does not exist");
+    modifier checkUser(address _addr) {        
+        require(users[_addr].number != 0, "Account does not exist");
         _;
     }
 
@@ -62,51 +61,39 @@ contract TEST4 {
     }
 
     function withdraw(uint _balance) public {
-        require(msg.sender == users[0].addr, "No atuthentification");
+        require(users[msg.sender].number == 1, "No atuthentification");
         require(_balance <= address(this).balance, "IInsufficient balance");
 
-        users[0].addr.transfer(_balance);       
+        payable(msg.sender).transfer(_balance);       
     }
 
     // * 유저 등록 기능 - 유저는 이름만 등록, 번호는 자동적으로 순차 증가, 주소도 자동으로 설정, 점수도 0으로 시작
     function register(string memory _name) public {
-        users.push(Game(users.length+1, _name, payable(msg.sender), 0, 0));
+        users[msg.sender] = Game(++total, _name, 0, 0);
     }
 
     // * 유저 조회 기능 - 유저의 전체정보 번호, 이름, 주소, 점수를 반환. 
-    function getUser(uint _idx) public view returns(Game memory) {
-        return users[_idx];
-    }
-
     function getUser(address _addr) public view returns(Game memory) {
-        Game memory result;
-        for(uint i = 0; i < users.length; i++) {
-            if(users[i].addr == _addr) {
-                result = users[i];
-                break;
-            }
-        }        
-        return result;
+        return users[_addr];
     }
 
     // * 게임 참가시 참가비 제출 기능 - 참가시 0.01eth 지불 (돈은 smart contract가 보관)
-    function pushRoom(uint _number) private {
-        room.push(_number);
+    function pushRoom(address _addr) private {
+        room.push(_addr);
         if(room.length == 4) {
             for(uint i = 0; i < room.length; i++) {          
-                users[room[i] - 1].score += 4-i;
+                users[room[i]].score += 4-i;
             }
             delete room;
         }
     }
 
     function play() public payable checkUser(msg.sender) {
-        Game memory user = getUser(msg.sender);
         if(msg.value >= 0.01 ether) {
-            pushRoom(user.number);
-        } else if (user.balance >= 0.01 ether){            
-            pushRoom(user.number);
-            users[user.number-1].balance -= 0.01 ether;
+            pushRoom(msg.sender);
+        } else if (users[msg.sender].balance >= 0.01 ether){            
+            pushRoom(msg.sender);
+            users[msg.sender].balance -= 0.01 ether;
         } else {
             revert("Insufficient balance");
         }
@@ -117,14 +104,13 @@ contract TEST4 {
         Game memory user = getUser(msg.sender);                
         require(user.score >= 10, "Insufficient score");
         
-        user.addr.transfer(0.1 ether * (user.score / 10));
-        users[user.number-1].score %= 10;        
+        payable(msg.sender).transfer(0.1 ether * (user.score / 10));
+        users[msg.sender].score %= 10;        
     }
 
     // * 예치 기능 - 게임할 때마다 참가비를 내지 말고 유저가 일정금액을 미리 예치하고 게임할 때마다 자동으로 차감시키는 기능.
-    function deposit() public payable {
-        Game memory user = getUser(msg.sender);
-        users[user.number-1].balance += msg.value;
+    function deposit() public payable checkUser(msg.sender) {
+        users[msg.sender].balance += msg.value;
     }
 
     receive() external payable { 
