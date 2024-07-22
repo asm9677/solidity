@@ -37,7 +37,7 @@ contract TEST6 {
         
         for(uint i = 0; i < stringLength.length; i++) {
             stringLength[i] = bytes1(uint8(digits[i+1]) + 0x30);
-        }
+        } 
         chars[0] = string(stringLength);
 
         for(uint i = 1; i <= byteString.length; i++) {
