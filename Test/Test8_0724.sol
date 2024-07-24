@@ -16,7 +16,7 @@ contract TEST8 {
     * 제안한 안건 확인 기능 - 자신이 제안한 안건에 대한 현재 진행 상황 확인기능 - (번호, 제목, 내용, 찬반 반환 // 밑의 심화 문제 풀었다면 상태도 반환)
     * 전체 안건 확인 기능 - 제목으로 안건을 검색하면 번호, 제목, 내용, 제안자, 찬반 수 모두를 반환하는 기능
     -------------------------------------------------------------------------------------------------
-    * 안건 진행 과정 - 투표 진행중, 통과, 기각 상태를 구별하여 알려주고 전체의 70%가 투표에 참여하고 투표자의 66% 이상이 찬성해야 통과로 변경, 둘 중 하나라도 만족못하면 기각
+    * 안건 진행 과정 - 투표 진행중, 통과, 기각 상태를 구별하여 알려주고 15개 블록 후에 전체의 70%가 투표에 참여하고 투표자의 66% 이상이 찬성해야 통과로 변경, 둘 중 하나라도 만족못하면 기각
     */
 
     struct Proposal {
@@ -26,6 +26,7 @@ contract TEST8 {
         address proponent;
         uint approvalCount;  
         uint disapprovalCount; 
+        uint blockNumber;
     }
 
     struct ProposalResult {
@@ -71,7 +72,7 @@ contract TEST8 {
     }
 
     function propose(string memory _title, string memory _description) public checkUser(false) checkProposal(_title, true) {        
-        proposals[_title] = Proposal(++proposalsCount, _title, _description, msg.sender, 0, 0);
+        proposals[_title] = Proposal(++proposalsCount, _title, _description, msg.sender, 0, 0, block.number);
         users[msg.sender].createdProposals.push(_title);
     }
 
@@ -79,11 +80,11 @@ contract TEST8 {
         Proposal memory _proposal = proposals[_title];
         uint voteCount = _proposal.approvalCount + _proposal.disapprovalCount;
 
-        if(voteCount == 0 || voteCount*10 < userCount*7) {
+        if(_proposal.blockNumber + 15 > block.number) {
             return unicode"투표 진행중";
         }
         else {
-            if(_proposal.approvalCount >= _proposal.disapprovalCount * 2) {
+            if(_proposal.approvalCount >= _proposal.disapprovalCount * 2 && voteCount*10 < userCount*7) {
                 return unicode"통과";
             } else {
                 return unicode"기각";
