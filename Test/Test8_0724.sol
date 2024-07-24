@@ -27,6 +27,7 @@ contract TEST8 {
         uint approvalCount;  
         uint disapprovalCount; 
         uint blockNumber;
+        uint userCount;
     }
 
     struct ProposalResult {
@@ -66,25 +67,26 @@ contract TEST8 {
 
     function vote(string memory _title, bool _isApproval) public checkUser(false){
         require(users[msg.sender].votes[_title] == false, "nope");
+        require(block.number < proposals[_title].blockNumber + 15, "nope");
         users[msg.sender].votes[_title] = true;
         users[msg.sender].isApproval[_title] = _isApproval;
         _isApproval ? proposals[_title].approvalCount++ : proposals[_title].disapprovalCount++;
+        proposals[_title].userCount = userCount;
     }
 
-    function propose(string memory _title, string memory _description) public checkUser(false) checkProposal(_title, true) {        
-        proposals[_title] = Proposal(++proposalsCount, _title, _description, msg.sender, 0, 0, block.number);
+    function propose(string memory _title, string memory _description) public checkUser(false) checkProposal(_title, true) {                
+        proposals[_title] = Proposal(++proposalsCount, _title, _description, msg.sender, 0, 0, block.number, userCount);
         users[msg.sender].createdProposals.push(_title);
     }
 
     function getProgress(string memory _title) public view checkProposal(_title, false) returns(string memory)   {
         Proposal memory _proposal = proposals[_title];
-        uint voteCount = _proposal.approvalCount + _proposal.disapprovalCount;
 
         if(_proposal.blockNumber + 15 > block.number) {
             return unicode"투표 진행중";
         }
         else {
-            if(_proposal.approvalCount >= _proposal.disapprovalCount * 2 && voteCount*10 < userCount*7) {
+            if(_proposal.approvalCount >= _proposal.disapprovalCount * 2 && _proposal.userCount*10 < userCount*7) {
                 return unicode"통과";
             } else {
                 return unicode"기각";
