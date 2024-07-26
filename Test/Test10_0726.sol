@@ -27,8 +27,9 @@ contract Central {
     mapping(address => uint) lastPayTaxesTimestamp;
     
     uint lastTimestamp;
-
+    address owner;
     constructor() {
+        owner = msg.sender;
         lastTimestamp = block.timestamp;
     }
 
@@ -41,7 +42,7 @@ contract Central {
         if(lastTimestamp + 30 days < block.timestamp) {
             lastTimestamp += 30 days;
         }
-        payTaxes();
+        _payTaxes(msg.sender);
         _;
     }
 
@@ -55,23 +56,28 @@ contract Central {
         return _sum;
     }
 
-    function payTaxes() public {
-        if(lastPayTaxesTimestamp[msg.sender] >= lastTimestamp) {
+    function collectTaxes(address _user) public {
+        require(msg.sender == owner, "nope");
+        _payTaxes(_user);
+    }
+
+    function _payTaxes(address _user) private {
+        if(lastPayTaxesTimestamp[_user] >= lastTimestamp) {
             return;
         }
         
-        uint _total = sumTaxes(msg.sender);
+        uint _total = sumTaxes(_user);
         for(uint i = 0; i < banks.length && _total != 0; i++) {                 
             Bank b = Bank(banks[i]);            
-            uint userBalance = b.balanceOf(msg.sender);
+            uint userBalance = b.balanceOf(_user);
             if(userBalance == 0) { 
                 continue;
             }
-            b.withdraw(msg.sender, address(this),  _total > userBalance ? userBalance : _total);                
+            b.withdraw(_user, address(this),  _total > userBalance ? userBalance : _total);                
             _total -= userBalance;
         }
 
-        lastPayTaxesTimestamp[msg.sender] = lastTimestamp;
+        lastPayTaxesTimestamp[_user] = lastTimestamp;
     }
 
     function createBank() public returns(address) {
