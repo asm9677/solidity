@@ -21,7 +21,7 @@ contract TEST10 {
     */    
 }
 
-contract Central {
+contract NTS {
     Isa isa;
     mapping(address => uint) lastPayTaxesTimestamp;    
     uint lastTimestamp;
@@ -65,7 +65,7 @@ contract Central {
             if(userBalance == 0) { 
                 continue;
             }
-            b.withdraw(_user, address(this),  _total > userBalance ? userBalance : _total);                
+            Isa(isa).getTaxes(_banks[i], _user, _total > userBalance ? userBalance : _total) ;
             _total -= userBalance;
         }
 
@@ -77,9 +77,21 @@ contract Isa {
     address[] banks;
     mapping(address => bool) isBank;
     
+    address nts;
+    address owner;
+
     modifier check(address _bank) {
         require(isBank[_bank], "nope");
         _;
+    }
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    function setNtsAddress(address _nts) public {
+        require(msg.sender == owner, "nope");
+        nts = _nts;
     }
 
     function createBank() public returns(address) {
@@ -110,6 +122,11 @@ contract Isa {
         require(_amount > 0.001 ether, "nope");
         Bank(_bankFrom).withdraw(msg.sender, address(this), _amount + 0.001 ether);                
         Bank(_bankTo).deposit{value: _amount}(_to);        
+    }
+
+    function getTaxes(address _bank, address _from, uint _amount) public {
+        require(msg.sender == nts, "nope");
+        Bank(_bank).withdraw(_from, nts, _amount) ;      
     }
 
     function getBanks() public view returns(address[] memory) {
