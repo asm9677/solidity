@@ -22,35 +22,23 @@ contract TEST10 {
 }
 
 contract Central {
-    address[] banks;
-    mapping(address => bool) isBank;
-    mapping(address => uint) lastPayTaxesTimestamp;
-    
+    Isa isa;
+    mapping(address => uint) lastPayTaxesTimestamp;    
     uint lastTimestamp;
+
     address owner;
-    constructor() {
+    constructor(address _isaAddress) {
         owner = msg.sender;
         lastTimestamp = block.timestamp;
-    }
-
-    modifier check(address _bank) {
-        require(isBank[_bank], "nope");
-        _;
-    }
-
-    modifier checkTaxes() {
-        if(lastTimestamp + 30 days < block.timestamp) {
-            lastTimestamp += 30 days;
-        }
-        _payTaxes(msg.sender);
-        _;
+        isa = Isa(_isaAddress);
     }
 
     function sumTaxes(address _user) public view returns(uint) {
         uint _sum;
+        address[] memory _banks = isa.getBanks();
         uint percent = (lastTimestamp - lastPayTaxesTimestamp[_user]) / 30 days;
-        for(uint i = 0; i < banks.length; i++) {                 
-            Bank b = Bank(banks[i]);            
+        for(uint i = 0; i < _banks.length; i++) {                 
+            Bank b = Bank(_banks[i]);            
             _sum += b.balanceOf(_user)*percent / 100;
         }
         return _sum;
@@ -58,6 +46,9 @@ contract Central {
 
     function collectTaxes(address _user) public {
         require(msg.sender == owner, "nope");
+        if(lastTimestamp + 30 days < block.timestamp) {
+            lastTimestamp += 30 days;
+        }
         _payTaxes(_user);
     }
 
@@ -67,8 +58,9 @@ contract Central {
         }
         
         uint _total = sumTaxes(_user);
-        for(uint i = 0; i < banks.length && _total != 0; i++) {                 
-            Bank b = Bank(banks[i]);            
+        address[] memory _banks = isa.getBanks();
+        for(uint i = 0; i < _banks.length && _total != 0; i++) {                 
+            Bank b = Bank(_banks[i]);            
             uint userBalance = b.balanceOf(_user);
             if(userBalance == 0) { 
                 continue;
@@ -78,6 +70,16 @@ contract Central {
         }
 
         lastPayTaxesTimestamp[_user] = lastTimestamp;
+    }
+}
+
+contract Isa {
+    address[] banks;
+    mapping(address => bool) isBank;
+    
+    modifier check(address _bank) {
+        require(isBank[_bank], "nope");
+        _;
     }
 
     function createBank() public returns(address) {
@@ -89,26 +91,29 @@ contract Central {
 
     function signUp(address _bank, string memory _name) public payable check(_bank) {
         Bank(_bank).signUp(msg.sender, _name);
-        lastPayTaxesTimestamp[msg.sender] = lastTimestamp;
     }
 
-    function deposit(address _bank) public payable check(_bank) checkTaxes {
+    function deposit(address _bank) public payable check(_bank)  {
         Bank(_bank).deposit{value: msg.value}(msg.sender);
     }
 
-    function withdraw(address _bank, uint _amount) public check(_bank) checkTaxes {
+    function withdraw(address _bank, uint _amount) public check(_bank)  {
         Bank(_bank).withdraw(msg.sender, msg.sender, _amount);        
     }
 
-    function transfer1(address _bankFrom, address _bankTo, uint _amount) public check(_bankFrom) check(_bankTo) checkTaxes {
+    function transfer1(address _bankFrom, address _bankTo, uint _amount) public check(_bankFrom) check(_bankTo)  {
         Bank(_bankFrom).withdraw(msg.sender, address(this), _amount);        
         Bank(_bankTo).deposit{value: _amount}(msg.sender);        
     }
 
-    function transfer2(address _bankFrom, address _bankTo, address _to, uint _amount) public check(_bankFrom) check(_bankTo) checkTaxes {
+    function transfer2(address _bankFrom, address _bankTo, address _to, uint _amount) public check(_bankFrom) check(_bankTo)  {
         require(_amount > 0.001 ether, "nope");
         Bank(_bankFrom).withdraw(msg.sender, address(this), _amount + 0.001 ether);                
         Bank(_bankTo).deposit{value: _amount}(_to);        
+    }
+
+    function getBanks() public view returns(address[] memory) {
+        return banks;
     }
 }
 
@@ -119,28 +124,26 @@ contract Bank {
     }
     mapping(address => User) users;
 
-    address central;
+    address isa;
     constructor() {
-        central = msg.sender;
+        isa = msg.sender;
     }
 
-    modifier check() {
-        require(msg.sender == central, "nope");
-        _;
-    }
-
-    function signUp(address _user, string memory _name) public check {
+    function signUp(address _user, string memory _name) public {
         require(bytes(users[_user].name).length == 0 || bytes(_name).length != 0, "nope");
+        require(msg.sender == isa, "nope");
+
         users[_user] = User(_name, 0);
     }
 
-    function deposit(address _to) public payable check {
+    function deposit(address _to) public payable {
         require(bytes(users[_to].name).length != 0, "nope");
         users[_to].balance += msg.value;
     }
 
-    function withdraw(address _from, address _to, uint _amount) public check {
-        uint _balance = users[_to].balance;
+    function withdraw(address _from, address _to, uint _amount) public {
+        require(msg.sender == isa || msg.sender == _from, "nope");
+        uint _balance = users[_from].balance;
         require(_balance >= _amount, "nope");
         users[_from].balance -= _amount;
         payable(_to).transfer(_amount);
