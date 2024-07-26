@@ -45,11 +45,12 @@ contract Central {
         _;
     }
 
-    function sumBalance(address _user) public view returns(uint) {
+    function sumTaxes(address _user) public view returns(uint) {
         uint _sum;
+        uint percent = (lastTimestamp - lastPayTaxesTimestamp[_user]) / 30 days;
         for(uint i = 0; i < banks.length; i++) {                 
             Bank b = Bank(banks[i]);            
-            _sum += b.balanceOf(_user) / 100;
+            _sum += b.balanceOf(_user)*percent / 100;
         }
         return _sum;
     }
@@ -59,7 +60,7 @@ contract Central {
             return;
         }
         
-        uint _total = sumBalance(msg.sender);
+        uint _total = sumTaxes(msg.sender);
         for(uint i = 0; i < banks.length && _total != 0; i++) {                 
             Bank b = Bank(banks[i]);            
             uint userBalance = b.balanceOf(msg.sender);
@@ -70,7 +71,7 @@ contract Central {
             _total -= userBalance;
         }
 
-        lastPayTaxesTimestamp[msg.sender] += 30 days;
+        lastPayTaxesTimestamp[msg.sender] = lastTimestamp;
     }
 
     function createBank() public returns(address) {
@@ -90,9 +91,6 @@ contract Central {
     }
 
     function withdraw(address _bank, uint _amount) public check(_bank) checkTax {
-        if(lastTimestamp > lastPayTaxesTimestamp[msg.sender]) {
-            return;
-        }
         Bank(_bank).withdraw(msg.sender, msg.sender, _amount);        
     }
 
