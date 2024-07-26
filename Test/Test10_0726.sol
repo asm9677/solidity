@@ -38,7 +38,7 @@ contract Central {
         _;
     }
 
-    modifier checkTax() {
+    modifier checkTaxes() {
         if(lastTimestamp + 30 days < block.timestamp) {
             lastTimestamp += 30 days;
         }
@@ -92,20 +92,20 @@ contract Central {
         lastPayTaxesTimestamp[msg.sender] = lastTimestamp;
     }
 
-    function deposit(address _bank) public payable check(_bank) checkTax {
+    function deposit(address _bank) public payable check(_bank) checkTaxes {
         Bank(_bank).deposit{value: msg.value}(msg.sender);
     }
 
-    function withdraw(address _bank, uint _amount) public check(_bank) checkTax {
+    function withdraw(address _bank, uint _amount) public check(_bank) checkTaxes {
         Bank(_bank).withdraw(msg.sender, msg.sender, _amount);        
     }
 
-    function transfer1(address _bankFrom, address _bankTo, uint _amount) public check(_bankFrom) check(_bankTo) checkTax {
+    function transfer1(address _bankFrom, address _bankTo, uint _amount) public check(_bankFrom) check(_bankTo) checkTaxes {
         Bank(_bankFrom).withdraw(msg.sender, address(this), _amount);        
         Bank(_bankTo).deposit{value: _amount}(msg.sender);        
     }
 
-    function transfer2(address _bankFrom, address _bankTo, address _to, uint _amount) public check(_bankFrom) check(_bankTo) checkTax {
+    function transfer2(address _bankFrom, address _bankTo, address _to, uint _amount) public check(_bankFrom) check(_bankTo) checkTaxes {
         require(_amount > 0.001 ether, "nope");
         Bank(_bankFrom).withdraw(msg.sender, address(this), _amount + 0.001 ether);                
         Bank(_bankTo).deposit{value: _amount}(_to);        
