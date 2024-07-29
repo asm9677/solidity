@@ -97,9 +97,10 @@ contract Test11 {
 
     function claim(uint _round) public checkBlockNumber(_round) {
         Ticket memory _winningNumbers = getWinningNumbers(_round);
+        Ticket[] memory _myTickets = tickets[_round][msg.sender];
         uint _claimReward;
-        for(uint i = 0; i < tickets[_round][msg.sender].length; i++) {
-            uint _count = correctNumber(tickets[_round][msg.sender][i], _winningNumbers);
+        for(uint i = 0; i < _myTickets.length; i++) {
+            uint _count = correctNumber(_myTickets[i], _winningNumbers);
             _claimReward += getwinningAmount(_count);            
         }
         delete tickets[_round][msg.sender];
