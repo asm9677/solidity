@@ -48,6 +48,20 @@ contract Test11 {
         raffleBlock[++round] = block.number + 100;
     }
 
+    function sorting(uint8 _a, uint8 _b, uint8 _c, uint8 _d, uint8 _e, uint8 _f) public pure returns(uint8,uint8,uint8,uint8,uint8,uint8) {
+        uint8[4] memory _numbers = [_a, _b, _c, _d];
+        for(uint i = 0; i < 3; i++) {
+            for(uint j = i+1; j < 4; j++ ){
+                if(_numbers[i] > _numbers[j]) {
+                    (_numbers[i], _numbers[j]) = (_numbers[j], _numbers[i]);
+                }
+            }
+        }
+
+        (_e, _f) = _e > _f ? (_f, _e) : (_e, _f);
+        return (_numbers[0],_numbers[1],_numbers[2],_numbers[3],_e,_f);
+    }
+
     function buyTicket(uint8 _a, uint8 _b, uint8 _c, uint8 _d, string memory _e, string memory _f) public payable {
         require(msg.value >= 0.05 ether, "insufficient balance");
         require(block.number + 32 < raffleBlock[round], "ended");
@@ -60,7 +74,10 @@ contract Test11 {
         require(bytes1(_c1[0]) >= bytes1('A') && bytes1(_c1[0]) <= bytes1('Z') , "nope");
         require(bytes1(_c2[0]) >= bytes1('A') && bytes1(_c2[0]) <= bytes1('Z') , "nope");
 
-        tickets[round][msg.sender].push(Ticket(_a,_b,_c,_d,uint8(_c1[0]) - 0x40, uint8(_c2[0]) - 0x40));
+        uint8 _e1;
+        uint8 _f1;
+        (_a, _b, _c, _d, _e1, _f1) = sorting(_a,_b,_c,_d,uint8(_c1[0]) - 0x40, uint8(_c2[0]) - 0x40);
+        tickets[round][msg.sender].push(Ticket(_a, _b, _c, _d, _e1, _f1));
     }
 
     function getWinningNumbers(uint _round) public view returns(Ticket memory) {
@@ -72,6 +89,7 @@ contract Test11 {
         uint _e = uint256(keccak256(abi.encodePacked(blockhash(_raffleBlock-4)))) % 26 + 1;
         uint _f = uint256(keccak256(abi.encodePacked(blockhash(_raffleBlock-5)))) % 26 + 1;
 
+        (_a, _b, _c, _d, _e, _f) = sorting(uint8(_a),uint8(_b),uint8(_c),uint8(_d),uint8(_e),uint8(_f));
         return Ticket(uint8(_a), uint8(_b), uint8(_c), uint8(_d), uint8(_e), uint8(_f));
     }
 
