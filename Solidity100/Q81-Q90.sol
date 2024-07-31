@@ -205,5 +205,21 @@ contract Q90 {
     90. 당신 지갑의 이름을 알려주세요. 아스키 코드를 이용하여 byte를 string으로 바꿔주세요.
     */
 
-    // 이해 못함
+    function toString(address _addr) public pure returns(string memory) {                
+        bytes memory _hex = "0123456789ABCDEF";        
+        bytes memory _ret = new bytes(40);
+
+        assembly {
+            let ptr := add(_ret, add(0x20, 39))
+            let h_ptr := add(_hex, 0x20) 
+            for{let i := 0} lt(i, 40) {i := add(i,1)} {
+                mstore8(ptr, byte(and(_addr,0xf), mload(h_ptr)))
+                ptr := sub(ptr,1)
+                _addr := shr(4, _addr)
+
+            }
+        }
+
+        return string(_ret);        
+    }
 }
