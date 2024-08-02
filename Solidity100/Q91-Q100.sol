@@ -190,41 +190,48 @@ contract Q98 {
 
 contract Q99 {
     /*    
-    99. 4개의 숫자를 받아서 가장 큰수와 작은 수를 반환하는 함수를 구현하세요.
+    99. inline - bytes4형 b의 값을 정하는 함수 setB를 구현하세요.
     */ 
-    function getMaxAndMin(uint[4] memory _a) public pure returns(uint _max, uint _min) {
+    bytes4 public b;
+    function setB(bytes4 _b) public {
         assembly {
-            _min := sub(0,1)
-            for{let i := 0} lt(i, 4) {i := add(i,1)} {
-                let k := mload(add(_a, mul(0x20, i)))
-                if lt(_max, k) {
-                    _max := k
-                }
-                if gt(_min, k) {
-                    _min := k
-                }
-            }
+            sstore(b.slot, shr(224, _b))
         }
     }
 }
 
 contract Q100 {
     /*    
-    100. 4개의 숫자를 받아서 가장 큰수와 작은 수를 반환하는 함수를 구현하세요.
+    100. inline - bytes형 변수 b의 값을 정하는 함수 setB를 구현하세요.
     */
 
-    function getMaxAndMin(uint[4] memory _a) public pure returns(uint _max, uint _min) {
-        assembly {
-            _min := sub(0,1)
-            for{let i := 0} lt(i, 4) {i := add(i,1)} {
-                let k := mload(add(_a, mul(0x20, i)))
-                if lt(_max, k) {
-                    _max := k
-                }
-                if gt(_min, k) {
-                    _min := k
+    bytes public b = bytes("0x1234");
+    function setB(bytes memory _b) public {
+        assembly{
+            let length := mload(_b)
+            let ptr := add(_b, 0x20)     
+            let size := shl(1,length)     
+
+            if lt(length, 32) {
+                sstore(b.slot, or(mload(ptr), size))            
+            }
+            if iszero(lt(length, 32)) {
+                sstore(b.slot, add(size, 1))
+
+                mstore(0x0, b.slot)
+                let nSlot := keccak256(0x0, 0x20)
+
+                for{let i := 0} lt(i, length) {i := add(i,0x20)} {                    
+                    sstore(nSlot, mload(add(ptr, i)))
+                    nSlot := add(nSlot, 1)
                 }
             }
+        }
+    }
+
+    function getB() public view returns(bytes32 _b) {
+        assembly {
+            _b := sload(b.slot)
         }
     }
 }
