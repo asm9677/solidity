@@ -205,7 +205,7 @@ contract Q100 {
     100. inline - bytes형 변수 b의 값을 정하는 함수 setB를 구현하세요.
     */
 
-    bytes public b = bytes("0x1234");
+    bytes public b;
     function setB(bytes memory _b) public {
         assembly{
             let length := mload(_b)
@@ -226,12 +226,6 @@ contract Q100 {
                     nSlot := add(nSlot, 1)
                 }
             }
-        }
-    }
-
-    function getB() public view returns(bytes32 _b) {
-        assembly {
-            _b := sload(b.slot)
         }
     }
 }
